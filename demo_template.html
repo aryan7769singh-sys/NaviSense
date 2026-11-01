@@ -1,0 +1,420 @@
+<title>Dead Reckoning Replay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#EFF2F2; --surface:#FAFCFC; --sunk:#E4E9E9;
+  --ink:#141A1C; --ink-2:#3E4A4D; --ink-3:#6B7779;
+  --rule:#CBD4D5; --rule-2:#DDE4E4;
+  --accent:#0D6E78; --crit:#A93A2C; --warn:#A96A05; --ok:#2F7D4F;
+  --ok-bg:#DDEDE3; --warn-bg:#F5E8D2; --crit-bg:#F5DDD9;
+  --road:#C3CDCE; --truth:#9DAAAC;
+  --display:'Archivo',ui-sans-serif,system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1113; --surface:#131A1D; --sunk:#0A0E10;
+    --ink:#DFE6E7; --ink-2:#A6B3B5; --ink-3:#768386;
+    --rule:#263134; --rule-2:#1C2528;
+    --accent:#48CEDA; --crit:#E0796A; --warn:#DDA43C; --ok:#6DC28E;
+    --ok-bg:#152A1E; --warn-bg:#2D2413; --crit-bg:#2E1B18;
+    --road:#2A3538; --truth:#4A5A5C;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1113; --surface:#131A1D; --sunk:#0A0E10;
+  --ink:#DFE6E7; --ink-2:#A6B3B5; --ink-3:#768386;
+  --rule:#263134; --rule-2:#1C2528;
+  --accent:#48CEDA; --crit:#E0796A; --warn:#DDA43C; --ok:#6DC28E;
+  --ok-bg:#152A1E; --warn-bg:#2D2413; --crit-bg:#2E1B18;
+  --road:#2A3538; --truth:#4A5A5C;
+}
+
+*{box-sizing:border-box}
+body{background:var(--paper); color:var(--ink); font-family:var(--display); margin:0;
+  -webkit-font-smoothing:antialiased}
+h1{font-size:1.85rem; font-weight:800; letter-spacing:-.03em; margin:0}
+.wrap{max-width:1500px; margin:0 auto; padding:24px 26px 56px}
+
+.head{display:flex; flex-wrap:wrap; gap:14px; align-items:baseline;
+  justify-content:space-between; border-bottom:2px solid var(--ink); padding-bottom:12px}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent)}
+.sub{font-family:var(--mono); font-size:12px; color:var(--ink-3); letter-spacing:.04em}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0;
+  margin-top:16px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--surface); overflow:hidden}
+.tile{padding:12px 17px; border-right:1px solid var(--rule)}
+.tile:last-child{border-right:0}
+.tk{font-family:var(--mono); font-size:9.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-3)}
+.tv{font-size:1.9rem; font-weight:700; letter-spacing:-.025em; margin-top:2px;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.tv em{font-style:normal; font-size:.5em; color:var(--ink-3); font-weight:500; margin-left:3px}
+.tv.ours{color:var(--accent)} .tv.naive{color:var(--crit)}
+
+.pill{display:inline-block; font-family:var(--mono); font-size:13px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; padding:4px 11px; border-radius:2px}
+.pill.live{background:var(--ok-bg); color:var(--ok)}
+.pill.lost{background:var(--crit-bg); color:var(--crit)}
+
+.grid{display:grid; grid-template-columns:minmax(0,2.1fr) minmax(0,1fr); gap:16px; margin-top:16px}
+@media (max-width:1080px){ .grid{grid-template-columns:minmax(0,1fr)} }
+
+.stage{border:1px solid var(--rule); border-radius:3px; background:var(--surface); position:relative}
+canvas{display:block; width:100%; height:auto; border-radius:3px}
+.legend{position:absolute; left:14px; top:12px; display:flex; flex-direction:column; gap:6px;
+  font-family:var(--mono); font-size:12px; color:var(--ink-2);
+  background:var(--surface); padding:9px 12px; border:1px solid var(--rule); border-radius:2px}
+.legend span{display:flex; align-items:center; gap:8px}
+.sw{width:18px; height:3px; border-radius:2px; display:inline-block; flex:none}
+
+.side{display:flex; flex-direction:column; gap:16px}
+.card{border:1px solid var(--rule); border-radius:3px; background:var(--surface); padding:13px 15px}
+.card h2{font-family:var(--mono); font-size:9.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-3); margin:0 0 9px; font-weight:600}
+
+.controls{display:flex; flex-wrap:wrap; gap:11px; align-items:center; margin-top:14px}
+button{font-family:var(--display); font-weight:600; font-size:14px; letter-spacing:.01em;
+  padding:11px 20px; border-radius:3px; border:1px solid var(--rule);
+  background:var(--surface); color:var(--ink); cursor:pointer}
+button:hover{border-color:var(--accent); color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+button:disabled{opacity:.4; cursor:not-allowed}
+button.primary{background:var(--accent); color:var(--paper); border-color:var(--accent)}
+button.primary:hover{opacity:.9; color:var(--paper)}
+button.kill{background:var(--crit); color:#fff; border-color:var(--crit); font-weight:700;
+  letter-spacing:.04em}
+button.kill:hover{opacity:.9; color:#fff}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.seg button{border:0; border-right:1px solid var(--rule); border-radius:0; padding:11px 15px;
+  font-family:var(--mono); font-size:13px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--paper)}
+.time{font-family:var(--mono); font-size:13px; color:var(--ink-3);
+  font-variant-numeric:tabular-nums; white-space:nowrap}
+.scrubwrap{flex:1 1 240px; min-width:200px; position:relative}
+input[type=range]{width:100%; accent-color:var(--accent); margin:0}
+.ticks{position:relative; height:9px; margin-top:-2px}
+.ticks i{position:absolute; width:2px; height:7px; background:var(--warn); border-radius:1px}
+
+table{border-collapse:collapse; width:100%; font-family:var(--mono); font-size:12px}
+th{font-size:9px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3);
+  text-align:right; font-weight:600; padding:4px 6px}
+th:first-child{text-align:left}
+td{padding:5px 6px; text-align:right; border-top:1px solid var(--rule-2);
+  font-variant-numeric:tabular-nums}
+td:first-child{text-align:left; color:var(--ink-3)}
+td.w{color:var(--accent); font-weight:600}
+td.l{color:var(--crit)}
+tr.on td{background:var(--sunk)}
+
+.note{margin-top:18px; padding:15px 19px; background:var(--surface);
+  border:1px solid var(--rule); border-left:3px solid var(--accent); border-radius:2px;
+  font-family:var(--mono); font-size:12.5px; line-height:1.8; color:var(--ink-2)}
+.note b{color:var(--ink); font-weight:600}
+.note .w{color:var(--warn)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="eyebrow">NAVISENSE &middot; GNSS-DENIED NAVIGATION &middot; SENSOR REPLAY</div>
+      <h1>NaviSense | Intelligent Navigation</h1>
+    </div>
+    <div class="sub" id="meta"></div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="tk">GNSS</div><div class="tv"><span class="pill live" id="gnss">Acquired</span></div></div>
+    <div class="tile"><div class="tk">Blind for</div><div class="tv" id="elapsed">0.0<em>s</em></div></div>
+    <div class="tile"><div class="tk">Distance blind</div><div class="tv" id="dist">0<em>m</em></div></div>
+    <div class="tile"><div class="tk">Speed (IMU only)</div><div class="tv ours" id="spd">0<em>km/h</em></div></div>
+    <div class="tile"><div class="tk">Drift &mdash; ours</div><div class="tv ours" id="do">0<em>m</em></div></div>
+    <div class="tile"><div class="tk">Drift &mdash; baseline</div><div class="tv naive" id="dn">0<em>m</em></div></div>
+  </div>
+
+  <div class="grid">
+    <div class="stage">
+      <canvas id="cv" width="1500" height="940"></canvas>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--road)"></i>OpenStreetMap roads</span>
+        <span><i class="sw" style="background:var(--truth);height:6px"></i>actual route</span>
+        <span><i class="sw" style="background:var(--accent)"></i>ours &mdash; VelNet + filter</span>
+        <span><i class="sw" style="background:var(--crit)"></i>baseline &mdash; strapdown INS</span>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <h2>Speed &mdash; estimated vs true</h2>
+        <canvas id="spdChart" width="640" height="230"></canvas>
+      </div>
+      <div class="card">
+        <h2>Drift as it accumulates</h2>
+        <canvas id="driftChart" width="640" height="230"></canvas>
+      </div>
+      <div class="card">
+        <h2>All held-out blackouts &mdash; median drift</h2>
+        <table id="stats"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="kill" id="kill">Kill GNSS</button>
+    <button class="primary" id="play">Play</button>
+    <button id="reset">Reset</button>
+    <div class="seg" id="durs"></div>
+    <div class="scrubwrap">
+      <input type="range" id="scrub" min="0" max="100" value="0" aria-label="Timeline">
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <span class="time" id="clock">0.0 s</span>
+  </div>
+
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+const D = __DATA__;
+
+const HZ = D.hz, N = D.truth.length, BN = D.blackoutSamples;
+const cv = document.getElementById('cv'), cx = cv.getContext('2d');
+const sc = document.getElementById('spdChart'), sx2 = sc.getContext('2d');
+const dc = document.getElementById('driftChart'), dx2 = dc.getContext('2d');
+
+let frame = 0, playing = false, raf = null, lastT = 0;
+let active = null;          // index into D.blackouts, or null while GNSS is up
+let duration = 30;          // seconds of blackout to run before auto-stopping
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const el = id => document.getElementById(id);
+
+/* ---- geometry: fit the whole clip once so the view never jumps ------------ */
+const bounds = (() => {
+  let e0=1e18,e1=-1e18,n0=1e18,n1=-1e18;
+  const see = p => { if(!p) return; e0=Math.min(e0,p[0]); e1=Math.max(e1,p[0]);
+                     n0=Math.min(n0,p[1]); n1=Math.max(n1,p[1]); };
+  D.truth.forEach(see);
+  D.blackouts.forEach(b => { b.ours.forEach(see); b.naive.forEach(see); });
+  const m = 80;
+  return {e0:e0-m, e1:e1+m, n0:n0-m, n1:n1+m};
+})();
+
+function view(){
+  const s = Math.min(cv.width/(bounds.e1-bounds.e0), cv.height/(bounds.n1-bounds.n0));
+  return {s, ox:(cv.width-(bounds.e1-bounds.e0)*s)/2, oy:(cv.height-(bounds.n1-bounds.n0)*s)/2};
+}
+const P = (p,v) => [v.ox+(p[0]-bounds.e0)*v.s, cv.height-v.oy-(p[1]-bounds.n0)*v.s];
+
+function poly(pts, colour, width){
+  if(pts.length < 2) return;
+  const v = view();
+  cx.beginPath();
+  pts.forEach((p,i) => { const q = P(p,v); i ? cx.lineTo(q[0],q[1]) : cx.moveTo(q[0],q[1]); });
+  cx.strokeStyle = colour; cx.lineWidth = width;
+  cx.lineJoin = cx.lineCap = 'round'; cx.stroke();
+}
+function dot(p, colour, r){
+  const v = view(), q = P(p,v);
+  cx.beginPath(); cx.arc(q[0],q[1],r,0,7); cx.fillStyle = colour; cx.fill();
+  cx.lineWidth = 2.5; cx.strokeStyle = css('--surface'); cx.stroke();
+}
+
+/* ---- the blackout currently in play -------------------------------------- */
+const bo = () => active === null ? null : D.blackouts[active];
+function blackIdx(){                        // how many samples into the blackout
+  const b = bo(); if(!b) return -1;
+  return Math.min(frame - b.startFrame, BN - 1);
+}
+const durFrames = () => Math.round(duration * HZ);
+
+function drawMap(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  const v = view();
+
+  cx.strokeStyle = css('--road'); cx.lineWidth = 2.5;
+  cx.beginPath();
+  for(const r of D.roads){
+    const a = P([r[0],r[1]],v), b = P([r[2],r[3]],v);
+    cx.moveTo(a[0],a[1]); cx.lineTo(b[0],b[1]);
+  }
+  cx.stroke();
+
+  poly(D.truth.slice(0, frame+1), css('--truth'), 9);
+
+  const b = bo(), k = blackIdx();
+  if(b && k >= 0){
+    poly(b.naive.slice(0,k+1), css('--crit'), 3.5);
+    poly(b.ours.slice(0,k+1),  css('--accent'), 4.5);
+    dot(b.naive[k], css('--crit'), 6);
+    dot(b.ours[k],  css('--accent'), 7);
+    dot(D.truth[b.startFrame], css('--warn'), 7);
+  }
+  if(frame < N) dot(D.truth[frame], css('--ink'), 6);
+}
+
+/* ---- charts --------------------------------------------------------------- */
+function axes(g, c, maxY, label){
+  g.clearRect(0,0,c.width,c.height);
+  g.strokeStyle = css('--rule-2'); g.lineWidth = 1;
+  for(let i=0;i<=3;i++){
+    const y = 22 + (c.height-40)*i/3;
+    g.beginPath(); g.moveTo(38,y); g.lineTo(c.width-8,y); g.stroke();
+    g.fillStyle = css('--ink-3'); g.font = '11px IBM Plex Mono, monospace';
+    g.textAlign = 'right';
+    g.fillText(Math.round(maxY*(1-i/3)), 33, y+4);
+  }
+  g.textAlign = 'left'; g.fillStyle = css('--ink-3');
+  g.fillText(label, 38, 13);
+}
+function series(g, c, vals, maxY, colour, width){
+  const n = vals.length; if(n < 2) return;
+  g.beginPath();
+  for(let i=0;i<n;i++){
+    const x = 38 + (c.width-46)*i/Math.max(durFrames()-1,1);
+    const y = 22 + (c.height-40)*(1 - Math.min(vals[i],maxY)/maxY);
+    i ? g.lineTo(x,y) : g.moveTo(x,y);
+  }
+  g.strokeStyle = colour; g.lineWidth = width; g.lineJoin='round'; g.stroke();
+}
+
+function drawCharts(){
+  const b = bo(), k = blackIdx();
+  const maxSpd = 110;
+  axes(sx2, sc, maxSpd, 'km/h');
+  if(b && k >= 0){
+    const t0 = b.startFrame;
+    series(sx2, sc, D.speedTrue.slice(t0, t0+k+1), maxSpd, css('--truth'), 5);
+    series(sx2, sc, b.speedEst.slice(0,k+1), maxSpd, css('--accent'), 2.5);
+  }
+
+  const maxD = Math.max(60, ...(b ? [b.driftNaive[Math.max(blackIdx(),0)],
+                                     b.driftOurs[Math.max(blackIdx(),0)]] : [0])) * 1.25;
+  axes(dx2, dc, maxD, 'metres off');
+  if(b && k >= 0){
+    series(dx2, dc, b.driftNaive.slice(0,k+1), maxD, css('--crit'), 2.5);
+    series(dx2, dc, b.driftOurs.slice(0,k+1),  maxD, css('--accent'), 3);
+  }
+}
+
+/* ---- readouts ------------------------------------------------------------- */
+function tiles(){
+  const b = bo(), k = blackIdx();
+  const g = el('gnss');
+  if(b && k >= 0){
+    g.textContent = 'Lost'; g.className = 'pill lost';
+    el('elapsed').innerHTML = (k/HZ).toFixed(1) + '<em>s</em>';
+    el('dist').innerHTML = Math.round(b.distance[k]) + '<em>m</em>';
+    el('spd').innerHTML = Math.round(b.speedEst[k]) + '<em>km/h</em>';
+    el('do').innerHTML = Math.round(b.driftOurs[k]) + '<em>m</em>';
+    el('dn').innerHTML = Math.round(b.driftNaive[k]) + '<em>m</em>';
+  } else {
+    g.textContent = 'Acquired'; g.className = 'pill live';
+    el('elapsed').innerHTML = '0.0<em>s</em>';
+    el('dist').innerHTML = '0<em>m</em>';
+    el('spd').innerHTML = Math.round(D.speedTrue[Math.min(frame,N-1)]) + '<em>km/h</em>';
+    el('do').innerHTML = '&mdash;'; el('dn').innerHTML = '&mdash;';
+  }
+  el('clock').textContent = (frame/HZ).toFixed(1) + ' s';
+  el('scrub').value = String(Math.round(1000*frame/(N-1)));
+
+  const b2 = bo(), k2 = blackIdx();
+  if(b2 && k2 >= 0){
+    const dist = Math.max(b2.distance[k2], 1);
+    const po = 100*b2.driftOurs[k2]/dist, pn = 100*b2.driftNaive[k2]/dist;
+    el('note').innerHTML =
+      `<b>${(k2/HZ).toFixed(0)} s blind, ${Math.round(dist)} m travelled.</b> ` +
+      `Ours <b>${Math.round(b2.driftOurs[k2])} m (${po.toFixed(1)}%)</b> &middot; ` +
+      `baseline <b>${Math.round(b2.driftNaive[k2])} m (${pn.toFixed(1)}%)</b>.<br>` +
+      `Recorded sensors from a <b>held-out</b> IO-VNBD drive; GNSS is genuinely withheld from ` +
+      `the marked point onward &mdash; the engine sees only accelerometer and gyroscope. ` +
+      `<span class="w">Performance varies by road segment</span>: these six start points span ` +
+      `${Math.min(...D.blackouts.map(b=>b.pct['30'][0])).toFixed(0)}% to ` +
+      `${Math.max(...D.blackouts.map(b=>b.pct['30'][0])).toFixed(0)}% at 30 s. The table gives ` +
+      `the median over all ${D.stats['30'].n} held-out blackouts.`;
+  } else {
+    el('note').innerHTML =
+      `<b>Press &ldquo;Kill GNSS&rdquo; to begin a blackout.</b> Until then the vehicle is ` +
+      `tracked normally by satellite. The amber ticks under the timeline mark the ` +
+      `${D.blackouts.length} points where a blackout can start.<br>` +
+      `Everything shown is a real recording replayed through the real engine &mdash; no ` +
+      `simulated vehicle, no simulated sensors.`;
+  }
+}
+
+function draw(){ drawMap(); drawCharts(); tiles(); }
+
+/* ---- playback ------------------------------------------------------------- */
+function step(ts){
+  if(!playing) return;
+  if(!lastT) lastT = ts;
+  const adv = Math.max(1, Math.round((ts-lastT)/1000*HZ));
+  lastT = ts;
+  frame = Math.min(frame + adv, N-1);
+
+  const b = bo();
+  if(b && frame - b.startFrame >= Math.min(durFrames(), BN) - 1){ pause(); }
+  else if(frame >= N-1){ pause(); }
+  draw();
+  if(playing) raf = requestAnimationFrame(step);
+}
+function play(){ if(playing) return; playing = true; lastT = 0;
+  el('play').textContent = 'Pause'; raf = requestAnimationFrame(step); }
+function pause(){ playing = false; el('play').textContent = 'Play';
+  if(raf) cancelAnimationFrame(raf); raf = null; }
+
+el('play').onclick = () => playing ? pause() : play();
+el('reset').onclick = () => { pause(); frame = 0; active = null; draw(); };
+
+el('kill').onclick = () => {
+  // Begin a blackout at the next available start point at or after the playhead —
+  // whichever one the judge has driven up to. Falls back to the first.
+  let i = D.blackouts.findIndex(b => b.startFrame >= frame);
+  if(i < 0) i = 0;
+  active = i;
+  frame = D.blackouts[i].startFrame;
+  draw();
+  play();
+};
+
+el('scrub').oninput = e => {
+  pause();
+  frame = Math.round((N-1) * (+e.target.value) / 1000);
+  const b = bo();
+  if(b && (frame < b.startFrame || frame - b.startFrame >= BN)) active = null;
+  draw();
+};
+
+/* ---- static furniture ----------------------------------------------------- */
+el('meta').textContent = `${D.trip} · ${(N/HZ).toFixed(0)} s clip · ${HZ} Hz`;
+
+el('durs').innerHTML = [10,30,60,90].map(d =>
+  `<button data-d="${d}" aria-pressed="${d===duration}">${d}s</button>`).join('');
+el('durs').onclick = e => {
+  const b = e.target.closest('button'); if(!b) return;
+  duration = +b.dataset.d;
+  [...el('durs').children].forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.d===duration)));
+  draw();
+};
+
+el('ticks').innerHTML = D.blackouts.map(b =>
+  `<i style="left:${(100*b.startFrame/(N-1)).toFixed(2)}%"></i>`).join('');
+
+el('stats').innerHTML =
+  `<tr><th>blackout</th><th>ours</th><th>baseline</th><th>n</th></tr>` +
+  Object.entries(D.stats).map(([k,v]) => {
+    const win = v.medianOurs < v.medianNaive;
+    return `<tr${+k===duration?' class="on"':''}><td>${k}s</td>` +
+      `<td class="${win?'w':'l'}">${v.medianOurs.toFixed(1)}%</td>` +
+      `<td>${v.medianNaive.toFixed(1)}%</td><td>${v.n}</td></tr>`;
+  }).join('');
+
+draw();
+</script>

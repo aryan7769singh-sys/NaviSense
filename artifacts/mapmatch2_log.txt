@@ -1,0 +1,22 @@
+Loaded model + 10 held-out trips
+  S-S3a+lag112: 27049 road segments
+  S-Vta17+lag31: 869 road segments
+  S-Vta1a+lag143: 13915 road segments
+  S-Vta27+lag51: 957 road segments
+  S-Vta30+lag5: 9269 road segments
+  S-Vtb3+lag28: 424 road segments
+  S-Vw11+lag26: 8480 road segments
+  S-Vw14a+lag-8: 8185 road segments
+  S-Vw14c+lag15: 18870 road segments
+  S-Vw4+lag45: 18332 road segments
+
+MAP MATCHING vs PLAIN DEAD RECKONING  (median drift, % of distance)
+  outage    n  |  no map   with map  |  change |  pass<10%
+  --------------------------------------------------------------
+    30s   340  |   32.28%    26.54%  |     +18% |   17.1%
+    60s   345  |   39.52%    32.93%  |     +17% |   12.2%
+   120s   342  |   50.42%    48.56%  |      +4% |    8.5%
+   180s   321  |   52.94%    49.65%  |      +6% |    6.5%
+
+Saved artifacts/mapmatch_eval.pkl (1348 windows)
+Done in 63s

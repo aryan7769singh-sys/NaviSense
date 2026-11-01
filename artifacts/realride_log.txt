@@ -1,0 +1,119 @@
+FIRST REAL VEHICLE RESULTS - realme RMX3371, 2026-08-24
+5 usable rides, 37.1 km, 74 min, 401 Hz accel AND gyro throughout.
+Analysed with analyze_ride.py. n = 21-100 simulated blackouts per ride.
+
+ride              km   min     hf  align    bias  corr  RMSE  mean |     fused 10/30/60 |   strapdown 10/30/60
+----------------------------------------------------------------------------------------------------------------------
+221327 AUTO     8.32  15.6  0.398  0.270   +4.22  0.21  6.22  3.35 |  39.2  41.4  44.8 |    9.8   15.7   23.0
+193941 METRO   13.37  31.6  0.052  0.323  -11.37  0.44 11.73  2.98 |  49.7  49.9  53.6 |   47.9   43.9   42.8
+212922          6.46  10.8  0.088  0.732   -6.48  0.45  8.40  4.87 |  55.1  71.4  65.2 |   10.4   78.8  102.3
+214016          4.95   8.8  0.042  0.771   +0.29  0.79  4.56  4.82 |  26.5  33.8  26.8 |   14.5   57.2  101.0
+201334          4.01   6.7  0.049  0.564   -3.56  0.18  6.44  4.50 |  42.4  55.7  48.1 |   16.7   89.9  100.5
+
+READ THIS BEFORE QUOTING ANY NUMBER ABOVE
+
+1. VelNet beats predict-the-mean on 1 of 5 rides (214016 only).
+   It is NOT a working speed estimator on this hardware or these vehicles.
+
+2. Failure DIRECTION tracks vibration (r=+0.67, n=5):
+     auto  hf 0.398 -> over-predicts by +4.22 m/s
+     metro hf 0.052 -> predicts 0.7 m/s while actually doing 13.4 m/s
+   The model maps road roughness to speed. A rail vehicle has none, so it
+   reads as stationary. This is the model doing what it was trained to do,
+   off-distribution - not a bug.
+
+3. Failure MAGNITUDE tracks alignment (r=+0.61 with skill, n=5).
+   BUT alignment CONVERGED on 3 rides (0.564/0.732/0.771) and VelNet still
+   failed on 2 of those 3. Fixing attitude alone will NOT fix the speed model.
+   This contradicts the 'attitude is the bottleneck' gate in the current plan.
+
+4. Do NOT quote 'ride length vs skill r=-0.92'. It is a confound: the
+   predict-the-mean baseline is strong on constant-speed rides, so the long
+   metro ride has a low baseline (2.98) that is hard to beat. Not a finding.
+
+5. Strapdown at 10 s is 9.8-16.7% on the four ROAD rides - at or near the
+   10% spec - and diverges to 23-102% by 60 s. Adaptive weighting by blackout
+   duration is the obvious unexploited win. It is not implemented.
+
+6. n = 21-100 blackouts per ride, ONE device, ONE day, one auto and one metro.
+   Directional evidence. Not a result.
+
+
+================================================================================
+FILTER EXPERIMENTS ON THE SAME 5 RIDES   (exp_qv_real.py, exp_ramp_real.py)
+================================================================================
+
+  configuration          10s drift pass | 30s drift pass | 60s drift pass
+  ---------------------------------------------------------------------
+  current (sigma as-is)     45.6    6%  |   49.3    4%   |   52.5    5%
+  flat sigma x100           27.5   24%  |   42.8   11%   |   54.7    6%
+  ramp k=100 tau=10s        28.3   24%  |   44.0    8%   |   47.7    5%
+  ramp k=300 tau=20s        27.4   24%  |   42.6   13%   |   52.8    5%
+  STRAPDOWN (no model)      25.2   30%  |   38.9   15%   |   55.2    6%
+
+1. q_v (process noise) is IRRELEVANT. Swept 0.6 -> 0.002, a 300x range;
+   drift moves under 1.5 points. You cannot fix a bad R by tuning Q.
+
+2. VelNet is OVERCONFIDENT BY ~100x on these vehicles. Inflating its reported
+   sigma x100 cuts 10 s drift 45.6 -> 27.5 and quadruples pass rate 6% -> 24%.
+   The NLL uncertainty head was calibrated on IO-VNBD cars and does not
+   transfer. This is why the filter could not down-weight a model that was
+   15 km/h wrong: it was told the model was certain.
+
+3. CROSSOVER CONFIRMED near 60 s, from both directions. Inflating sigma helps
+   at 10-30 s and HURTS at 60 s (52.5 -> 54.7). Integration is better early,
+   the model is better late.
+
+4. THE UNCOMFORTABLE RESULT. Strapdown with NO MODEL AT ALL still wins at
+   10 s (25.2% / 30% pass) and 30 s (38.9% / 15% pass) against every filter
+   configuration tried. The model only earns its place at 60 s, where the
+   ramp gives 47.7% against strapdown's 55.2%.
+   Short blackouts - tunnels, flyovers, the PRIMARY use case - are currently
+   best served by deleting the neural network.
+
+5. Even with the model fully suppressed (sigma x1000) fused gives 27.7% while
+   strapdown gives 25.2%. The residual gap is the ZUPT/bias machinery, not
+   the model. Worth checking whether the stationary detector false-fires.
+
+6. k and tau were chosen ON THESE SAME RIDES. Fitting on the evaluation set.
+   Upper bound on headroom, NOT a validated result. Needs a held-out drive.
+
+================================================================================
+WHERE IS THE SPEED CUE ACTUALLY?   (first real test of the 400 Hz thesis)
+================================================================================
+
+Correlation |r| between log band-energy of accel magnitude and GNSS speed,
+4 s windows, moving samples only:
+
+  ride       0.5-2Hz  2-5Hz  5-15Hz 15-40Hz 40-90Hz 90-180Hz
+  193941      0.48    0.35    0.42    0.14    0.11    0.00   metro
+  201334      0.27    0.11    0.02    0.02    0.02    0.02
+  212922      0.43    0.05    0.29    0.20    0.17    0.35
+  214016      0.80    0.15    0.73    0.43    0.28    0.15   <- VelNet works here
+  221327      0.05    0.27    0.12    0.52    0.30    0.15   auto
+  MEAN        0.40    0.19    0.32    0.27    0.18    0.13
+
+  below 5 Hz (IO-VNBD can see this):  mean |r| = 0.30
+  above 5 Hz (400 Hz was to unlock):  mean |r| = 0.22
+
+THE 400 Hz THESIS IS NOT SUPPORTED ON AVERAGE. The strongest band is the
+LOWEST one, 0.5-2 Hz - suspension resonance, which 10 Hz data captures fine.
+We have argued for weeks that the cue lives above 5 Hz and that IO-VNBD's
+10 Hz destroyed it. On the first data able to test that, it does not hold.
+
+TWO REAL QUALIFICATIONS, both important:
+  - The AUTO is the exception and a strong one: 0.05 at 0.5-2 Hz but 0.52 at
+    15-40 Hz. For three-wheelers the cue genuinely IS high-frequency, and
+    high-rate capture genuinely does pay. The thesis is right for that class.
+  - 214016, the only ride where VelNet works, has by far the strongest cue in
+    any band (0.80 / 0.73). Cue strength predicts model success. Consistent.
+
+DO NOT OVERREAD: this is a LINEAR correlation of a scalar band energy. VelNet
+learns a nonlinear function of 8 channels over 10 s. Weak linear correlation
+is not proof the information is absent. But mean |r| ~0.3 in the best band,
+across 5 rides, says the signal is weak in this data - not that the model
+merely needs more capacity.
+
+ALSO MEASURED: vibration->speed slope is unstable WITHIN a ride (551% drift
+between first and second half) and varies in sign between rides. A hand-fitted
+per-vehicle scale factor will not work. R2 is ~0.00 on 4 of 5 rides.

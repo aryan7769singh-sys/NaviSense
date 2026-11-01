@@ -1,0 +1,9 @@
+name = "idr-collect"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# R2 holds the ride recordings. Free tier covers 10 GB, which is roughly 400 rides
+# at 25 MB each — far more than this project will produce.
+[[r2_buckets]]
+binding = "RIDES"
+bucket_name = "idr-rides"

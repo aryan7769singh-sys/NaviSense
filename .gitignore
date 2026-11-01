@@ -1,0 +1,6 @@
+.gradle/
+.kotlin/
+**/build/
+**/bin/
+*.log
+local.properties

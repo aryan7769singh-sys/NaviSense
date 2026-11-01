@@ -1,0 +1,215 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1760" height="712" viewBox="0 0 1760 712" xmlns="http://www.w3.org/2000/svg" font-family="Consolas, 'IBM Plex Mono', ui-monospace, monospace" role="img" aria-label="Full system architecture of the NaviSense intelligent dead reckoning system: phone IMU and GNSS feed CaptureService, which drives both a runtime plane (NavEngine: alignment and vibration at raw rate, decimation, rotation, ring buffer, ONNX inference, speed filter, dead reckoning) and a data plane (CSV, quality gates, upload, collection, trajectory split, training, ONNX export), joined by the exported model file.">
+  <defs>
+    <marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#47585B"/></marker>
+    <marker id="m1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#0B7C8A"/></marker>
+    <marker id="m1c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#B8442D"/></marker>
+    <marker id="m1d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#7A8A8C"/></marker>
+  </defs>
+  <rect x="0" y="0" width="1760" height="712" fill="#FFFFFF"/>
+
+  <!-- ===================== INPUT COLUMN ===================== -->
+  <text fill="#7A8A8C" font-size="10.5" letter-spacing="0.7" x="24" y="44">PHONE SENSORS PHONE SENSORS â€” UNCALIBRATED, FASTEST RATE THE DEVICE GIVESmdash; UNCALIBRATED, FASTEST RATE</text>
+  <rect fill="#E8F2F3" stroke="#0B7C8A" stroke-width="1.4" x="24" y="54" width="336" height="88" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="38" y="78">Phone IMU</text>
+  <text fill="#47585B" font-size="11" x="38" y="98">accel 402 Hz Â· gyro 200â€“800 Hz</text>
+  <text fill="#47585B" font-size="11" x="38" y="114">mag 100 Hz â€” logged, not used live</text>
+  <text fill="#47585B" font-size="11" x="38" y="130">sensor-hub timestamps, not callback</text>
+
+  <rect fill="none" stroke="#CBD6D6" stroke-width="1.2" stroke-dasharray="2 5" x="24" y="172" width="336" height="210" rx="3"/>
+  <text fill="#101A1C" font-size="14" font-weight="600" x="38" y="196">CaptureService</text>
+  <text fill="#47585B" font-size="11" x="38" y="213">foreground service + wake lock</text>
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="38" y="226" width="308" height="48" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="50" y="247">registerWithProbe</text>
+  <text fill="#47585B" font-size="11" x="50" y="264">rate ladder Â· 4 s probe Â· verify</text>
+  <rect fill="#FAEEEB" stroke="#B8442D" stroke-width="1.3" x="38" y="284" width="308" height="48" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="50" y="305">abortIfCrippled</text>
+  <text fill="#47585B" font-size="11" x="50" y="322">accel or gyro dead â†’ stop</text>
+  <text fill="#47585B" font-size="11" x="38" y="356">synchronized writer â€” 2 torn rows</text>
+  <text fill="#47585B" font-size="11" x="38" y="371">in 538,694 measured without it</text>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M192,142 L192,168" marker-end="url(#m1)"/>
+
+  <rect fill="#FAEEEB" stroke="#B8442D" stroke-width="1.3" x="24" y="412" width="160" height="52" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="36" y="433">GNSS</text>
+  <text fill="#47585B" font-size="11" x="36" y="450">~1 Hz, never fused</text>
+  <path stroke="#7A8A8C" stroke-width="1.2" fill="none" stroke-dasharray="4 4" d="M80,382 L80,408" marker-end="url(#m1d)"/>
+
+  <!-- CSV drop to the data plane -->
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M250,382 L250,508" marker-end="url(#m1)"/>
+
+  <!-- live sample bus -->
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M360,250 L376,250 L376,88 L1026,88"/>
+  <text fill="#0B7C8A" font-size="11" font-weight="500" x="440" y="80">same samples, live â€” everything above the decimator sees full rate</text>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M414,88 L414,192" marker-end="url(#m1a)"/>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M580,88 L580,98" marker-end="url(#m1a)"/>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M880,88 L880,98" marker-end="url(#m1a)"/>
+
+  <!-- GNSS route to the top -->
+  <path stroke="#B8442D" stroke-width="1.6" fill="none" stroke-dasharray="5 4" d="M184,438 L368,438 L368,20 L1215,20 L1215,98" marker-end="url(#m1c)"/>
+  <text fill="#7A8A8C" font-size="10.5" letter-spacing="0.7" x="640" y="14">GNSS fixes â€” LocationManager, registered by CaptureService, never the fused provider</text>
+
+  <!-- ===================== RUNTIME PANE ===================== -->
+  <rect fill="none" stroke="#CBD6D6" stroke-width="1.2" stroke-dasharray="2 5" x="392" y="44" width="1344" height="410" rx="3"/>
+  <text fill="#101A1C" font-size="14" font-weight="600" x="408" y="70">NavEngine</text>
+  <text fill="#47585B" font-size="11" x="508" y="70">the filter never stops â€” losing GNSS removes measurements, not modes</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="440" y="102" width="280" height="62" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="452" y="123">Aligner.update()</text>
+  <text fill="#47585B" font-size="11" x="452" y="140">gravity â†’ roll/pitch</text>
+  <text fill="#47585B" font-size="11" x="452" y="155">accel PCA â†’ mount yaw</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="736" y="102" width="290" height="62" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="748" y="123">VibrationEnergy</text>
+  <text fill="#47585B" font-size="11" x="748" y="140">HF energy of |a|</text>
+  <text fill="#47585B" font-size="11" x="748" y="155">the 20â€“100 Hz stopped cue</text>
+
+  <rect fill="#FAEEEB" stroke="#B8442D" stroke-width="1.3" x="1090" y="102" width="250" height="62" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1102" y="123">pushGnss()</text>
+  <text fill="#47585B" font-size="11" x="1102" y="140">records truth position</text>
+  <text fill="#47585B" font-size="11" x="1102" y="155">even while killed</text>
+
+  <rect fill="#FAEEEB" stroke="#B8442D" stroke-width="1.3" x="1366" y="102" width="350" height="62" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1378" y="123">GPS-KILL gate</text>
+  <text fill="#47585B" font-size="11" x="1378" y="140">while GNSS present: learn gyro bias,</text>
+  <text fill="#47585B" font-size="11" x="1378" y="155">nudge heading, speed z Ïƒ=0.4, snapTo</text>
+  <path stroke="#B8442D" stroke-width="1.6" fill="none" stroke-dasharray="5 4" d="M1340,133 L1362,133" marker-end="url(#m1c)"/>
+
+  <!-- main chain -->
+  <rect fill="#E8F2F3" stroke="#0B7C8A" stroke-width="1.4" x="408" y="196" width="198" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="420" y="220">decimate Ã—40</text>
+  <text fill="#47585B" font-size="11" x="420" y="239">boxcar average IS</text>
+  <text fill="#47585B" font-size="11" x="420" y="254">the anti-alias filter</text>
+  <text fill="#47585B" font-size="11" x="420" y="269">above 5 Hz: gone</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="630" y="196" width="198" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="642" y="220">rotate â†’ vehicle</text>
+  <text fill="#47585B" font-size="11" x="642" y="239">R = yaw(mount)</text>
+  <text fill="#47585B" font-size="11" x="642" y="254">Â· level(gravity)</text>
+  <text fill="#47585B" font-size="11" x="642" y="269">acc and Ï‰ both</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="852" y="196" width="198" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="864" y="220">ring buffer Â· 200</text>
+  <text fill="#47585B" font-size="11" x="864" y="239">last 100 rows =</text>
+  <text fill="#47585B" font-size="11" x="864" y="254">one 10 s window</text>
+  <text fill="#47585B" font-size="11" x="864" y="269">8 channels</text>
+
+  <rect fill="#E8F2F3" stroke="#0B7C8A" stroke-width="1.4" x="1074" y="196" width="198" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1086" y="220">ONNX inference</text>
+  <text fill="#47585B" font-size="11" x="1086" y="239">1 Ã— 8 Ã— 100 â†’</text>
+  <text fill="#47585B" font-size="11" x="1086" y="254">speed and Ïƒ</text>
+  <text fill="#47585B" font-size="11" x="1086" y="269">10 Ã— per second</text>
+
+  <rect fill="#EAF2ED" stroke="#2E7A52" stroke-width="1.3" x="1296" y="196" width="198" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1308" y="220">SpeedFilter</text>
+  <text fill="#47585B" font-size="11" x="1308" y="239">Kalman [speed, bias]</text>
+  <text fill="#47585B" font-size="11" x="1308" y="254">3 measurements,</text>
+  <text fill="#47585B" font-size="11" x="1308" y="269">1 prediction</text>
+
+  <rect fill="#EAF2ED" stroke="#2E7A52" stroke-width="1.3" x="1518" y="196" width="198" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1530" y="220">DeadReckoner</text>
+  <text fill="#47585B" font-size="11" x="1530" y="239">heading from Ï‰</text>
+  <text fill="#47585B" font-size="11" x="1530" y="254">position from speed</text>
+  <text fill="#47585B" font-size="11" x="1530" y="269">dt clamped to 0.3 s</text>
+
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M606,239 L626,239" marker-end="url(#m1a)"/>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M828,239 L848,239" marker-end="url(#m1a)"/>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M1050,239 L1070,239" marker-end="url(#m1a)"/>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M1272,239 L1292,239" marker-end="url(#m1a)"/>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M1494,239 L1514,239" marker-end="url(#m1a)"/>
+  <text fill="#0B7C8A" font-size="11" font-weight="500" x="1276" y="232">v&#770;</text>
+
+  <path stroke="#7A8A8C" stroke-width="1.2" fill="none" stroke-dasharray="4 4" d="M660,164 L660,192" marker-end="url(#m1d)"/>
+  <text fill="#7A8A8C" font-size="10.5" letter-spacing="0.7" x="668" y="182">rotation matrix</text>
+
+  <!-- lower band -->
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="630" y="330" width="198" height="76" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="642" y="352">ForwardBias</text>
+  <text fill="#47585B" font-size="11" x="642" y="370">Ï„ = 30 s, removes</text>
+  <text fill="#47585B" font-size="11" x="642" y="385">tilt-leaked gravity</text>
+  <text fill="#47585B" font-size="11" x="642" y="400">from forward accel</text>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M729,282 L729,326" marker-end="url(#m1)"/>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M828,368 L1284,368 L1284,239 L1292,239" marker-end="url(#m1)"/>
+  <text fill="#7A8A8C" font-size="10.5" letter-spacing="0.7" x="880" y="362">corrected forward accel â†’ the prediction step</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="1296" y="330" width="198" height="100" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1308" y="352">StationaryDetector</text>
+  <text fill="#47585B" font-size="11" x="1308" y="371">1 yaw rate â†’ veto</text>
+  <text fill="#47585B" font-size="11" x="1308" y="386">2 GNSS &lt; 0.5</text>
+  <text fill="#47585B" font-size="11" x="1308" y="401">3 HF energy &lt; 0.06</text>
+  <text fill="#47585B" font-size="11" x="1308" y="416">4 v&#770; &lt; 1.5 â€” any one</text>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M1395,326 L1395,286" marker-end="url(#m1)"/>
+  <text fill="#7A8A8C" font-size="10.5" letter-spacing="0.7" x="1402" y="310">ZUPT z=0, R=0.25</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="1518" y="330" width="198" height="100" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1530" y="352">NavState â†’ UI</text>
+  <text fill="#47585B" font-size="11" x="1530" y="371">position, speed,</text>
+  <text fill="#47585B" font-size="11" x="1530" y="386">distance, heading</text>
+  <text fill="#47585B" font-size="11" x="1530" y="401">drift vs GNSS truth</text>
+  <text fill="#47585B" font-size="11" x="1530" y="416">10 Ã— per second</text>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M1617,282 L1617,326" marker-end="url(#m1)"/>
+
+  <path stroke="#B8442D" stroke-width="1.6" fill="none" stroke-dasharray="5 4" d="M1440,164 L1440,192" marker-end="url(#m1c)"/>
+  <text fill="#B8442D" font-size="11" font-weight="500" x="1448" y="182">speed z</text>
+  <path stroke="#B8442D" stroke-width="1.6" fill="none" stroke-dasharray="5 4" d="M1640,164 L1640,192" marker-end="url(#m1c)"/>
+  <text fill="#B8442D" font-size="11" font-weight="500" x="1648" y="182">heading + bias</text>
+
+  <!-- ===================== DATA PLANE ===================== -->
+  <text fill="#7A8A8C" font-size="10.5" letter-spacing="0.7" x="24" y="500">DATA PLANE â€” THE SAME CAPTURE BECOMES THE NEXT MODEL</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="24" y="512" width="260" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="36" y="536">drive_*.csv</text>
+  <text fill="#47585B" font-size="11" x="36" y="555">one row per sensor event</text>
+  <text fill="#47585B" font-size="11" x="36" y="570">never deleted, not even</text>
+  <text fill="#47585B" font-size="11" x="36" y="585">after a successful upload</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="314" y="512" width="260" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="326" y="536">RideQuality Â· audit</text>
+  <text fill="#47585B" font-size="11" x="326" y="555">reject unusable rides at</text>
+  <text fill="#47585B" font-size="11" x="326" y="570">three separate points â€”</text>
+  <text fill="#47585B" font-size="11" x="326" y="585">phone, laptop, server</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="604" y="512" width="260" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="616" y="536">Uploader â†’ Collector</text>
+  <text fill="#47585B" font-size="11" x="616" y="555">Wi-Fi only Â· resumable</text>
+  <text fill="#47585B" font-size="11" x="616" y="570">LAN server or CF Worker</text>
+  <text fill="#47585B" font-size="11" x="616" y="585">token gated, no overwrite</text>
+
+  <rect fill="#EAF2ED" stroke="#2E7A52" stroke-width="1.3" x="894" y="512" width="260" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="906" y="536">pool + split_by_trip</text>
+  <text fill="#47585B" font-size="11" x="906" y="555">trajectory split, never</text>
+  <text fill="#47585B" font-size="11" x="906" y="570">random â€” windows overlap</text>
+  <text fill="#47585B" font-size="11" x="906" y="585">97% Â· + IO-VNBD 35 of 72</text>
+
+  <rect fill="#E7ECEC" stroke="#CBD6D6" stroke-width="1" x="1184" y="512" width="260" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="13" font-weight="500"  x="1196" y="536">features â†’ train</text>
+  <text fill="#47585B" font-size="11" x="1196" y="555">causal 10 s windows, 8 ch</text>
+  <text fill="#47585B" font-size="11" x="1196" y="570">accel DC removed per window</text>
+  <text fill="#47585B" font-size="11" x="1196" y="585">heads: speed and log-var</text>
+
+  <rect fill="#E8F2F3" stroke="#0B7C8A" stroke-width="1.4" x="1474" y="512" width="262" height="86" rx="2"/>
+  <text fill="#101A1C" font-size="14" font-weight="600" x="1486" y="536">velnet.onnx Â· 202 KB</text>
+  <text fill="#47585B" font-size="11" x="1486" y="555">written by export_onnx.py</text>
+  <text fill="#47585B" font-size="11" x="1486" y="570">runs on the phone with</text>
+  <text fill="#47585B" font-size="11" x="1486" y="585">no network at all</text>
+
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M284,555 L310,555" marker-end="url(#m1)"/>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M574,555 L600,555" marker-end="url(#m1)"/>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M864,555 L890,555" marker-end="url(#m1)"/>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M1154,555 L1180,555" marker-end="url(#m1)"/>
+  <path stroke="#47585B" stroke-width="1.3" fill="none" d="M1444,555 L1470,555" marker-end="url(#m1)"/>
+
+  <!-- the crossing -->
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M1736,555 L1748,555 L1748,470 L1173,470 L1173,376 A7,7 0 0,0 1173,362 L1173,290" marker-end="url(#m1a)"/>
+  <text fill="#0B7C8A" font-size="11" font-weight="500" x="1186" y="464">shipped as an app asset â€” the only thing that crosses between the two planes</text>
+
+  <!-- legend -->
+  <line fill="none" stroke="#CBD6D6" stroke-width="1" stroke-dasharray="3 4" x1="24" y1="620" x2="1736" y2="620"/>
+  <path stroke="#47585B" stroke-width="1.3" fill="none"   d="M24,652 L74,652"/>
+  <text fill="#47585B" font-size="11"   x="82" y="656">always flows</text>
+  <path stroke="#0B7C8A" stroke-width="1.8" fill="none" d="M240,652 L290,652"/>
+  <text fill="#47585B" font-size="11"   x="298" y="656">the inertial spine</text>
+  <path stroke="#B8442D" stroke-width="1.6" fill="none" stroke-dasharray="5 4" d="M480,652 L530,652"/>
+  <text fill="#47585B" font-size="11"   x="538" y="656">withheld the moment GPS-KILL is pressed</text>
+  <path stroke="#7A8A8C" stroke-width="1.2" fill="none" stroke-dasharray="4 4" d="M900,652 L950,652"/>
+  <text fill="#47585B" font-size="11"   x="958" y="656">parameters and registration, not sample data</text>
+</svg>

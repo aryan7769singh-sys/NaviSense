@@ -1,0 +1,31 @@
+Loading ALL IO-VNBD recordings, 20 min each...
+  35 trips, 501 min (8.4 h) in 94s
+    speed range 0-116 km/h, mean 41
+
+Split BY TRIP: 25 train / 10 val
+Training VelNet on real smartphone IMU, taught by CAN wheel speed...
+  epoch   0  nll   61.396   val speed RMSE  6.886 m/s
+  epoch   5  nll   19.679   val speed RMSE  4.821 m/s
+  epoch  10  nll   14.496   val speed RMSE  5.034 m/s
+  epoch  15  nll    7.924   val speed RMSE  5.209 m/s
+  epoch  20  nll    6.283   val speed RMSE  5.200 m/s
+  epoch  25  nll    5.663   val speed RMSE  5.297 m/s
+  epoch  29  nll    5.496   val speed RMSE  5.261 m/s
+
+  predict-the-mean :  8.23 m/s
+  VelNet           :  4.82 m/s
+  CarSpeedNet SOTA : 1.80 m/s (20 Hz data, 4 s window)
+
+Simulating GNSS blackouts on held-out trips...
+
+REAL IO-VNBD — final position error as % of distance travelled
+  outage    n    dist  |  FUSED med   p90   pass |  VelNet med |  strapdown med
+  ------------------------------------------------------------------------------
+    10s   429    130m  |    38.21%  107.67%     7% |     38.35% |        84.2%
+    30s   470    355m  |    47.93%  137.74%     3% |     47.92% |        91.0%
+    60s   489    642m  |    64.08%  171.88%     2% |     64.19% |        97.3%
+   120s   469   1182m  |    75.77%  191.33%     1% |     75.41% |        96.4%
+   180s   435   1673m  |    86.54%  206.74%     0% |     86.35% |        96.9%
+
+Figures: artifacts/iovnbd_*.png
+Done in 389s

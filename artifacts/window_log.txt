@@ -1,0 +1,11 @@
+35 trips (25 train / 10 val)
+predict-the-mean baseline: 8.23 m/s
+
+    window    params   val RMSE    time
+-----------------------------------------
+       4s    38,306      4.582    154s
+       7s    49,874      4.181    233s
+      10s    49,874      3.912    308s
+      15s    61,442      4.026    470s
+
+best: 10s window at 3.912 m/s (+14.6% vs the 4 s baseline)
